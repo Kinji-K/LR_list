@@ -10,6 +10,7 @@ ATT_NUM = 4 # 参加人数
 att_name=[] # 参加者名用配列
 att_id=[] # 参加者id用配列
 cells=[] # セル内項目用配列
+Booknames=[] #書籍名用配列
 
 #csv読み込み
 with open("attend.csv") as f:
@@ -45,10 +46,11 @@ for i in range(ATT_NUM):
         sys.exit()
 
     # 読んだ本のタイトルと著者名
-    Booknames = soup.select('div.detail__title')
+    Thumbnails = soup.select('div.book__thumbnail')
+    for Thumbnail in Thumbnails:
+        Booknames.append(Thumbnail.find('img').get('alt'))
+    print(Booknames)
     Authors = soup.select('div.detail__authors')
-
-    
 
     for j in range(MAX_NUM):
         # 読んだ冊数を超えた要素は空白で埋める
@@ -56,7 +58,7 @@ for i in range(ATT_NUM):
             cells.append("")
         # そうでない場合はタイトルと著者名を入れる
         else:
-            Bookname = Booknames[j].string
+            Bookname = Booknames[j]
             Author = Authors[j].string
 
             # 著者が設定してされていなければ空白を入れる
@@ -64,7 +66,9 @@ for i in range(ATT_NUM):
                 Author = " "
 
             # セルに書き込み
-            cells.append("\"" + Bookname + "\n" + Author + "\"")
+            cells.append(Bookname + "\n" + Author)
+            # cells.append("\"" + Bookname + "\n" + Author + "\"")
+    Booknames.clear()
     time.sleep(10)
 
 # リスト整形用に参加者名のリストの最初に空白を入れる
