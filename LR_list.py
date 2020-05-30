@@ -1,6 +1,7 @@
 import csv
 import requests
 import time
+import sys
 from bs4 import BeautifulSoup
 i=0
 
@@ -38,10 +39,10 @@ for i in range(ATT_NUM):
     num = soup.select('div.content__count')
     n = int(num[0].string)
     print(n)
-    # 読んだ冊数が制限値を超えていたらエラーを出してbreak
+    # 読んだ冊数が制限値を超えていたらエラーを出してプログラムを停止
     if n > MAX_NUM:
-        print("読んだ冊数が" + str(MAX_NUM) + "冊を超えています")
-        break
+        print("エラー：読んだ冊数が" + str(MAX_NUM) + "冊を超えています")
+        sys.exit()
 
     # 読んだ本のタイトルと著者名
     Booknames = soup.select('div.detail__title')
