@@ -2,6 +2,7 @@ import csv
 import requests
 import time
 import sys
+import unicodedata
 from bs4 import BeautifulSoup
 i=0
 
@@ -11,6 +12,20 @@ att_name=[] # 参加者名用配列
 att_id=[] # 参加者id用配列
 cells=[] # セル内項目用配列
 Booknames=[] #書籍名用配列
+Lined_Bookname=[] #改行付き書籍名用配列
+
+
+
+# 半角、全角をそれぞれ1文字、2文字として文字数をカウントする
+def len_count(text):
+    t_count = 0
+    for c in text:
+        if unicodedata.east_asian_width(c) in 'FWA':
+            t_count += 2
+        else:
+            t_count += 1
+    return t_count
+
 
 #csv読み込み
 with open("attend.csv") as f:
@@ -46,11 +61,10 @@ for i in range(ATT_NUM):
         sys.exit()
 
     # 読んだ本のタイトルと著者名
-    Thumbnails = soup.select('div.book__thumbnail')
+    Thumbnails = soup.select(".book-list--grid .book__thumbnail img")
     for Thumbnail in Thumbnails:
-        Booknames.append(Thumbnail.find('img').get('alt'))
-    print(Booknames)
-    Authors = soup.select('div.detail__authors')
+        Booknames.append(Thumbnail.get('alt'))
+    Authors = soup.select(".book-list--grid .detail__authors")
 
     for j in range(MAX_NUM):
         # 読んだ冊数を超えた要素は空白で埋める
@@ -61,13 +75,30 @@ for i in range(ATT_NUM):
             Bookname = Booknames[j]
             Author = Authors[j].string
 
+            # 本の名前が長すぎたときに改行を入れる
+            count = 0
+            for char in Bookname:
+                count = count + len_count(char)
+                Lined_Bookname.append(char)
+                if count > 40:
+                    Lined_Bookname.append("\n")
+                    count = 0
+
+            # 最後が改行記号なら削除する
+            if Lined_Bookname[-1] == "\n":
+                del Lined_Bookname[-1]
+
             # 著者が設定してされていなければ空白を入れる
             if not Author:
                 Author = " "
 
+            print(Author)
+
             # セルに書き込み
-            cells.append(Bookname + "\n" + Author)
-            # cells.append("\"" + Bookname + "\n" + Author + "\"")
+            cells.append("".join(Lined_Bookname) + "\n\n" + Author)
+            Lined_Bookname.clear()
+
+    # Booknames.clear()
     Booknames.clear()
     time.sleep(10)
 
@@ -82,3 +113,4 @@ with open('output.csv','w') as f:
     for i in range(MAX_NUM):
         list_row = [cells[i+1+j*MAX_NUM] for j in range(ATT_NUM+1)]
         writer.writerow(list_row)
+
