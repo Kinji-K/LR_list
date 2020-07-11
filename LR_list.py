@@ -7,7 +7,7 @@ from bs4 import BeautifulSoup
 i=0
 
 MAX_NUM = 50 # 読んだ冊数の最大値（デフォルト=50）
-ATT_NUM = 4 # 参加人数
+att_num = 0 # 参加人数用変数
 att_name=[] # 参加者名用配列
 att_id=[] # 参加者id用配列
 cells=[] # セル内項目用配列
@@ -32,6 +32,7 @@ with open("attend.csv") as f:
     for row in csv.reader(f):
         att_name.append(row[0])
         att_id.append(row[1])
+        att_num = att_num + 1
 
 print(att_name)
 print(att_id)
@@ -43,7 +44,7 @@ cells.append("")
 for i in range(MAX_NUM):
     cells.append(i+1)
 
-for i in range(ATT_NUM):
+for i in range(att_num):
 # 取得URL作成
     url = 'https://bookmeter.com/users/' + att_id[i] + '/summary'
     print(url)
@@ -111,6 +112,6 @@ with open('output.csv','w') as f:
     
     writer.writerow(att_name) # 参加者名の列挙
     for i in range(MAX_NUM):
-        list_row = [cells[i+1+j*MAX_NUM] for j in range(ATT_NUM+1)]
+        list_row = [cells[i+1+j*MAX_NUM] for j in range(att_num+1)]
         writer.writerow(list_row)
 
