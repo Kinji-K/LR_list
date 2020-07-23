@@ -15,7 +15,7 @@ att_name=[] # 参加者名用配列
 att_id=[] # 参加者id用配列
 cells=[] # セル内項目用配列
 Booknames=[] #書籍名用配列
-Lined_Bookname=[] #改行付き書籍名用配列
+Bookurls=[] # 本のURL用配列
 
 
 # 半角、全角をそれぞれ1文字、2文字として文字数をカウントする
@@ -36,10 +36,10 @@ def num2alpha(number):
 class BookInfo:
 
     # コンストラクタ
-    def __init__(self, title, auther):
+    def __init__(self, title, auther, url):
         self.title = title
         self.auther = auther
-        # self.url = urlはあとで追加すること
+        self.url = url
 
     # タイトルに改行を入れるメソッド
     def LinedTitle(self):
@@ -67,6 +67,10 @@ class BookInfo:
             if count > 40:
                 break
         self.auther = "".join(cut_auther)
+
+    # urlを絶対パス表記に変換するメソッド
+    def UrlConvert(self):
+        self.url = "https://bookmeter.com" + self.url
 
 #csv読み込み
 with open("attend.csv") as f:
@@ -103,20 +107,27 @@ for i in range(att_num):
     for Thumbnail in Thumbnails:
         Booknames.append(Thumbnail.get('alt'))
     Authors = soup.select(".book-list--grid .detail__authors")
+
+    Thumbnails = soup.select(".book-list--grid .thumbnail__cover a")
+    for Thumbnail in Thumbnails:
+        Bookurl = Thumbnail.get('href')
+        if not Bookurl.startswith("/reviews/"):
+            Bookurls.append(Thumbnail.get('href'))
+
     print(Booknames)
 
     for j in range(MAX_NUM):
 
         # 読んだ冊数を超えた要素は空白で埋める
         if j >= n:
-            cells.append(BookInfo("",""))
+            cells.append(BookInfo("","",""))
 
         # そうでない場合はタイトルと著者名を入れる
         else:
             if not Authors[j].string:
-                cells.append(BookInfo(Booknames[j],""))
+                cells.append(BookInfo(Booknames[j],"",Bookurls[j]))
             else:
-                cells.append(BookInfo(Booknames[j],Authors[j].string))
+                cells.append(BookInfo(Booknames[j],Authors[j].string,Bookurls[j]))
 
             # 本の名前が長すぎたときに改行を入れる
             cells[i*MAX_NUM+j].LinedTitle()
@@ -124,8 +135,12 @@ for i in range(att_num):
             # 著者名が長過ぎたらカットする
             cells[i*MAX_NUM+j].CutAuther()
 
+            # 本のURLを絶対パス表記に変更する
+            cells[i*MAX_NUM+j].UrlConvert()
+
     # Booknames.clear()
     Booknames.clear()
+    Bookurls.clear()
     time.sleep(10)
 
 # エクセルシートの作成
@@ -136,25 +151,27 @@ ws = wb.active
 side = Side(style='thin', color='000000')
 side_dot = Side(style='dotted', color='888888')
 
-border_odd = Border(bottom=side, right=side)
-border_even = Border(bottom=side_dot, right=side)
+border1 = Border(right=side)
+border2 = Border(bottom=side_dot, right=side)
+border3 = Border(bottom=side, right=side)
 
 # A1セルは空白
-ws.cell(row=1,column=1,value="").border = border_odd
+ws.cell(row=1,column=1,value="").border = border3
 
 # 一列目作成
 for i in range(MAX_NUM):
-    ws.cell(row=2*(i+1),column=1,value=i+1).alignment = Alignment(horizontal='center', vertical='top')
+    ws.cell(row=3*(i+1)-1,column=1,value=i+1).alignment = Alignment(horizontal='center', vertical='top')
     ws.column_dimensions["A"].width = 3
 
     # 一列目の罫線描写
-    ws.cell(row=2*(i+1),column=1).border = border_even
-    ws.cell(row=2*(i+1)+1,column=1).border = border_odd
+    ws.cell(row=3*(i+1)-1,column=1).border = border1
+    ws.cell(row=3*(i+1),column=1).border = border2
+    ws.cell(row=3*(i+1)+1,column=1).border = border3
 
 # 一行目作成
 for i in range(att_num):
     ws.cell(row=1,column=i+2,value=att_name[i]).alignment = Alignment(horizontal='center')
-    ws.cell(row=1,column=i+2).border = border_odd
+    ws.cell(row=1,column=i+2).border = border3
 
 # 本情報書き込み
 
@@ -164,12 +181,17 @@ for i in range(att_num):
     ws.column_dimensions[num2alpha(i+2)].width = 35
     for j in range(MAX_NUM):
         # 本情報の書き込みと整列
-        ws.cell(row=2*(j+1),column=i+2,value=cells[i*MAX_NUM+j].title).alignment = Alignment(vertical='top')
-        ws.cell(row=2*(j+1)+1,column=i+2,value=cells[i*MAX_NUM+j].auther).alignment = Alignment(vertical='top')
+        ws.cell(row=3*(j+1)-1,column=i+2,value=cells[i*MAX_NUM+j].title).alignment = Alignment(vertical='top')
+        ws.cell(row=3*(j+1)+1,column=i+2,value=cells[i*MAX_NUM+j].auther).alignment = Alignment(vertical='top')
+
+        if cells[i*MAX_NUM+j].title != "":
+            ws.cell(row=3*(j+1),column=i+2,value="link").hyperlink = cells[i*MAX_NUM+j].url
+
 
         # 罫線描写
-        ws.cell(row=2*(j+1),column=i+2).border = border_even
-        ws.cell(row=2*(j+1)+1,column=i+2).border = border_odd
+        ws.cell(row=3*(j+1)-1,column=i+2).border = border1
+        ws.cell(row=3*(j+1),column=i+2).border = border2
+        ws.cell(row=3*(j+1)+1,column=i+2).border = border3
 
         # 最大行数の更新
         if max_height[j] < cells[i*MAX_NUM+j].title.count("\n")+1:
@@ -177,7 +199,7 @@ for i in range(att_num):
 
 # 行幅調整
 for i in range(MAX_NUM):
-    ws.row_dimensions[2*(i+1)].height = 13 * max_height[i]
+    ws.row_dimensions[3*(i+1)-1].height = 13 * max_height[i]
 
 # エクセルシートの保存
 wb.save('output.xlsx')
