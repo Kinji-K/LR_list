@@ -1,4 +1,7 @@
 import csv
+import openpyxl
+from openpyxl.styles.alignment import Alignment
+from openpyxl.styles.borders import Border, Side
 import requests
 import time
 import sys
@@ -15,7 +18,6 @@ Booknames=[] #書籍名用配列
 Lined_Bookname=[] #改行付き書籍名用配列
 
 
-
 # 半角、全角をそれぞれ1文字、2文字として文字数をカウントする
 def len_count(text):
     t_count = 0
@@ -26,6 +28,45 @@ def len_count(text):
             t_count += 1
     return t_count
 
+# 数字をアルファベットに変換
+def num2alpha(number):
+    return chr(number+64)
+
+# 本の情報用クラス作成
+class BookInfo:
+
+    # コンストラクタ
+    def __init__(self, title, auther):
+        self.title = title
+        self.auther = auther
+        # self.url = urlはあとで追加すること
+
+    # タイトルに改行を入れるメソッド
+    def LinedTitle(self):
+        lined_title=[]
+        count=0
+        for char in self.title:
+            count = count + len_count(char)
+            lined_title.append(char)
+            if count > 40:
+                lined_title.append("\n")
+                count = 0
+        # 最後が改行記号なら削除する
+        if lined_title[-1] == "\n":
+            del lined_title[-1]
+        
+        self.title = "".join(lined_title)
+    
+    # 著者名が長すぎる場合はカットするメソッド
+    def CutAuther(self):
+        cut_auther=[]
+        count=0
+        for char in self.auther:
+            count = count + len_count(char)
+            cut_auther.append(char)
+            if count > 40:
+                break
+        self.auther = "".join(cut_auther)
 
 #csv読み込み
 with open("attend.csv") as f:
@@ -38,13 +79,8 @@ print(att_name)
 print(att_id)
 
 
-# cellsの一列目作成
-cells.append("")
-
-for i in range(MAX_NUM):
-    cells.append(i+1)
-
 for i in range(att_num):
+
 # 取得URL作成
     url = 'https://bookmeter.com/users/' + att_id[i] + '/summary'
     print(url)
@@ -55,7 +91,8 @@ for i in range(att_num):
     # 読んだ冊数
     num = soup.select('div.content__count')
     n = int(num[0].string)
-    print(n)
+    #print(n)
+
     # 読んだ冊数が制限値を超えていたらエラーを出してプログラムを停止
     if n > MAX_NUM:
         print("エラー：読んだ冊数が" + str(MAX_NUM) + "冊を超えています")
@@ -66,52 +103,81 @@ for i in range(att_num):
     for Thumbnail in Thumbnails:
         Booknames.append(Thumbnail.get('alt'))
     Authors = soup.select(".book-list--grid .detail__authors")
+    print(Booknames)
 
     for j in range(MAX_NUM):
+
         # 読んだ冊数を超えた要素は空白で埋める
         if j >= n:
-            cells.append("")
+            cells.append(BookInfo("",""))
+
         # そうでない場合はタイトルと著者名を入れる
         else:
-            Bookname = Booknames[j]
-            Author = Authors[j].string
+            if not Authors[j].string:
+                cells.append(BookInfo(Booknames[j],""))
+            else:
+                cells.append(BookInfo(Booknames[j],Authors[j].string))
 
             # 本の名前が長すぎたときに改行を入れる
-            count = 0
-            for char in Bookname:
-                count = count + len_count(char)
-                Lined_Bookname.append(char)
-                if count > 40:
-                    Lined_Bookname.append("\n")
-                    count = 0
+            cells[i*MAX_NUM+j].LinedTitle()
 
-            # 最後が改行記号なら削除する
-            if Lined_Bookname[-1] == "\n":
-                del Lined_Bookname[-1]
-
-            # 著者が設定してされていなければ空白を入れる
-            if not Author:
-                Author = " "
-
-            print(Author)
-
-            # セルに書き込み
-            cells.append("".join(Lined_Bookname) + "\n\n" + Author)
-            Lined_Bookname.clear()
+            # 著者名が長過ぎたらカットする
+            cells[i*MAX_NUM+j].CutAuther()
 
     # Booknames.clear()
     Booknames.clear()
     time.sleep(10)
 
-# リスト整形用に参加者名のリストの最初に空白を入れる
-att_name.insert(0,"")
+# エクセルシートの作成
+wb = openpyxl.Workbook()
+ws = wb.active
 
-# 書き込み用csv作成
-with open('output.csv','w') as f:
-    writer = csv.writer(f)
-    
-    writer.writerow(att_name) # 参加者名の列挙
-    for i in range(MAX_NUM):
-        list_row = [cells[i+1+j*MAX_NUM] for j in range(att_num+1)]
-        writer.writerow(list_row)
+# 罫線用関数の設定
+side = Side(style='thin', color='000000')
+side_dot = Side(style='dotted', color='888888')
 
+border_odd = Border(bottom=side, right=side)
+border_even = Border(bottom=side_dot, right=side)
+
+# A1セルは空白
+ws.cell(row=1,column=1,value="").border = border_odd
+
+# 一列目作成
+for i in range(MAX_NUM):
+    ws.cell(row=2*(i+1),column=1,value=i+1).alignment = Alignment(horizontal='center', vertical='top')
+    ws.column_dimensions["A"].width = 3
+
+    # 一列目の罫線描写
+    ws.cell(row=2*(i+1),column=1).border = border_even
+    ws.cell(row=2*(i+1)+1,column=1).border = border_odd
+
+# 一行目作成
+for i in range(att_num):
+    ws.cell(row=1,column=i+2,value=att_name[i]).alignment = Alignment(horizontal='center')
+    ws.cell(row=1,column=i+2).border = border_odd
+
+# 本情報書き込み
+
+max_height = [1 for i in range(MAX_NUM)]  # 最大行数の初期化
+for i in range(att_num):
+    # セル幅の設定
+    ws.column_dimensions[num2alpha(i+2)].width = 35
+    for j in range(MAX_NUM):
+        # 本情報の書き込みと整列
+        ws.cell(row=2*(j+1),column=i+2,value=cells[i*MAX_NUM+j].title).alignment = Alignment(vertical='top')
+        ws.cell(row=2*(j+1)+1,column=i+2,value=cells[i*MAX_NUM+j].auther).alignment = Alignment(vertical='top')
+
+        # 罫線描写
+        ws.cell(row=2*(j+1),column=i+2).border = border_even
+        ws.cell(row=2*(j+1)+1,column=i+2).border = border_odd
+
+        # 最大行数の更新
+        if max_height[j] < cells[i*MAX_NUM+j].title.count("\n")+1:
+            max_height[j] = cells[i*MAX_NUM+j].title.count("\n") + 1
+
+# 行幅調整
+for i in range(MAX_NUM):
+    ws.row_dimensions[2*(i+1)].height = 13 * max_height[i]
+
+# エクセルシートの保存
+wb.save('output.xlsx')
