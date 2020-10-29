@@ -5,8 +5,10 @@ from openpyxl.styles.borders import Border, Side
 import requests
 import time
 import sys
+import os
 from bs4 import BeautifulSoup
 from BookInfo import BookInfo
+from Drive import DriveUpload
 i=0
 
 MAX_NUM = 50 # 読んだ冊数の最大値（デフォルト=50）
@@ -16,7 +18,7 @@ att_id=[] # 参加者id用配列
 cells=[] # セル内項目用配列
 Booknames=[] #書籍名用配列
 Bookurls=[] # 本のURL用配列
-
+OUTPUT_NAME = 'output.xlsx'
 
 
 
@@ -26,6 +28,8 @@ def num2alpha(number):
 
 #csv読み込み
 with open("attend.csv") as f:
+    title = f.readline()
+
     for row in csv.reader(f):
         att_name.append(row[0])
         att_id.append(row[1])
@@ -130,7 +134,7 @@ for i in range(att_num):
 max_height = [1 for i in range(MAX_NUM)]  # 最大行数の初期化
 for i in range(att_num):
     # セル幅の設定
-    ws.column_dimensions[num2alpha(i+2)].width = 35
+    ws.column_dimensions[num2alpha(i+2)].width = 45
     for j in range(MAX_NUM):
         # 本情報の書き込みと整列
         ws.cell(row=3*(j+1)-1,column=i+2,value=cells[i*MAX_NUM+j].title).alignment = Alignment(vertical='top')
@@ -154,4 +158,12 @@ for i in range(MAX_NUM):
     ws.row_dimensions[3*(i+1)-1].height = 13 * max_height[i]
 
 # エクセルシートの保存
-wb.save('output.xlsx')
+wb.save(OUTPUT_NAME)
+
+if(os.path.exists('client_secrets.json')):
+
+    # Google Driveへのアップロード
+    Drive = DriveUpload(title)
+    Drive.FileUpload(OUTPUT_NAME)
+    D_id = Drive.GetId()
+    print(D_id)

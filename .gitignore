@@ -2,3 +2,5 @@ attend.csv
 output.csv
 output.xlsx
 /__pycache__/
+client_secrets.json
+credentials.json
