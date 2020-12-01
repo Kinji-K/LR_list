@@ -1,6 +1,9 @@
 attend.csv
 output.csv
 output.xlsx
+.vscode
 /__pycache__/
 client_secrets.json
 credentials.json
+Zoomapi.json
+input.json
