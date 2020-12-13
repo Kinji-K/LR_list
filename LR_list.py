@@ -12,6 +12,7 @@ from BookInfo import BookInfo
 from Drive import DriveUpload
 from GetEventInfo import EventInfo
 from Zoom import ZoomAPI
+from Calendar import CalendarPost
 i=0
 
 MAX_NUM = 50 # 読んだ冊数の最大値（デフォルト=50）
@@ -33,6 +34,7 @@ if __name__ == "__main__":
         Event_id = json_load['EventID']
         ZoomMeetingSet = json_load['ZoomMeetingSet']
         GoogleDriveUp = json_load['GoogleDriveUp']
+        GoogleCalendarUp = json_load['GoogleCalendarUp']
 
     event = EventInfo(Event_id)
     event.GetHTML()
@@ -175,8 +177,11 @@ if __name__ == "__main__":
     # Zoomの開始時間はイベントの15分前
     d_15m = datetime.timedelta(minutes=15)
     zoom_start = event.datetime - d_15m
+    d_120m = datetime.timedelta(minutes=120)
+    zoom_end = zoom_start + d_120m
 
     start_time = str(zoom_start.date()) + "T" + str(zoom_start.time())
+    end_time = str(zoom_end.date()) + "T" + str(zoom_end.time())
     print(start_time)
 
     if ZoomMeetingSet:
@@ -188,3 +193,9 @@ if __name__ == "__main__":
         zoom.CreatePassword()
         zoom.SettingMeeting("LR",start_time)
         zoom.CreateMeeting()
+
+    if GoogleCalendarUp:
+        calendar = CalendarPost()
+        calendar.CalendarOuth()
+        calendar.HttpAccees()
+        calendar.PostEvent("LR","ZOOM","LR meeting",start_time,end_time)
