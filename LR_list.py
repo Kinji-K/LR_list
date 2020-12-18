@@ -200,6 +200,4 @@ if __name__ == "__main__":
 
     if GoogleCalendarUp:
         calendar = CalendarPost()
-        calendar.CalendarOuth()
-        calendar.HttpAccees()
         calendar.PostEvent("LR","ZOOM","LR meeting",start_time,end_time)

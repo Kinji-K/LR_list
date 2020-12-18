@@ -13,25 +13,18 @@ class CalendarPost:
     # コンストラクタ
     def __init__ (self):
         self.SCOPES = ['https://www.googleapis.com/auth/calendar']
-        self.creds = None
-        self.title = ""
-        self.location = ""
-        self.description = ""
-        self.start_time = ""
-        self.end_time = ""
+        creds = None
     
-    # アクセス認証
-    def CalendarOuth(self):
+       # アクセス認証
         store = Storage("calendar_credential.json")
-        self.creds = store.get()
-        if not self.creds or self.creds.invalid:
+        creds = store.get()
+        if not creds or creds.invalid:
             flow = client.flow_from_clientsecrets("client_secrets.json", self.SCOPES)
             flow.user_agent = "LR_Drive"
-            self.creds = tools.run_flow(flow, store)
+            creds = tools.run_flow(flow, store)
     
-    # カレンダーへの認証
-    def HttpAccees(self):
-        http = self.creds.authorize(httplib2.Http())
+        # カレンダーへの認証
+        http = creds.authorize(httplib2.Http())
         self.service = discovery.build('calendar','v3',http=http)
 
     # イベント取得
@@ -48,22 +41,17 @@ class CalendarPost:
 
     # イベント登録
     def PostEvent(self,title,location,description,start_time,end_time):
-        self.title = title
-        self.location = location
-        self.description = description
-        self.start_time = start_time
-        self.end_time = end_time
 
         event = {
-            'summary':self.title,
-            'location':self.location,
-            'description':self.description,
+            'summary':title,
+            'location':location,
+            'description':description,
             'start':{
-                'dateTime':self.start_time,
+                'dateTime':start_time,
                 'timeZone':'Japan',
             },
             'end':{
-                'dateTime':self.end_time,
+                'dateTime':end_time,
                 'timeZone':'Japan',
             }
         }
@@ -72,7 +60,5 @@ class CalendarPost:
         print(event['id'])
 
 if __name__ == "__main__":
-    calendar = CalenderPost()
-    calendar.CalendarOuth()
-    calendar.HttpAccees()
+    calendar = CalendarPost()
     calendar.PostEvent("LR","ZOOM","LR meeting","2020-12-19T09:00:00","2020-12-19T12:00:00")
