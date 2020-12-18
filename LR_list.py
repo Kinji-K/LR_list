@@ -31,24 +31,25 @@ if __name__ == "__main__":
     with open('input.json','r') as f:
         json_load = json.load(f)
 
+        host = json_load["Host"]
         Event_id = json_load['EventID']
         ZoomMeetingSet = json_load['ZoomMeetingSet']
         GoogleDriveUp = json_load['GoogleDriveUp']
         GoogleCalendarUp = json_load['GoogleCalendarUp']
 
-    event = EventInfo(Event_id)
-    event.GetHTML()
-    event.GetMember()
-    event.GetTitle()
-    event.GetSchedule()
+    event = EventInfo(Event_id,host)
+    ids = event.GetMemberId()
+    member_names = event.GetMemberName()
+    excel_title = event.GetTitle()
+    schedule = event.GetSchedule()
 
-    print(event.member_names)
-    print(event.member_ids)
+    print(member_names)
+    print(ids)
 
-    for i in range(len(event.member_names)):
+    for i in range(len(member_names)):
 
     # 取得URL作成
-        url = 'https://bookmeter.com/users/' + event.member_ids[i] + '/summary'
+        url = 'https://bookmeter.com/users/' + ids[i] + '/summary'
         print(url)
 
         res = requests.get(url)
@@ -56,27 +57,30 @@ if __name__ == "__main__":
 
         # 読んだ冊数
         num = soup.select('div.content__count')
-        n = int(num[0].string)
-        #print(n)
+        if num:
+            n = int(num[0].string)
+        else:
+            n = 0
 
         # 読んだ冊数が制限値を超えていたらエラーを出してプログラムを停止
         if n > MAX_NUM:
             print("エラー：読んだ冊数が" + str(MAX_NUM) + "冊を超えています")
             sys.exit()
 
-        # 読んだ本のタイトルと著者名
-        Thumbnails = soup.select(".book-list--grid .book__thumbnail img")
-        for Thumbnail in Thumbnails:
-            Booknames.append(Thumbnail.get('alt'))
-        Authors = soup.select(".book-list--grid .detail__authors")
+        if n != 0:
+            # 読んだ本のタイトルと著者名
+            Thumbnails = soup.select(".book-list--grid .book__thumbnail img")
+            for Thumbnail in Thumbnails:
+                Booknames.append(Thumbnail.get('alt'))
+            Authors = soup.select(".book-list--grid .detail__authors")
 
-        Thumbnails = soup.select(".book-list--grid .thumbnail__cover a")
-        for Thumbnail in Thumbnails:
-            Bookurl = Thumbnail.get('href')
-            if not Bookurl.startswith("/reviews/"):
-                Bookurls.append(Thumbnail.get('href'))
+            Thumbnails = soup.select(".book-list--grid .thumbnail__cover a")
+            for Thumbnail in Thumbnails:
+                Bookurl = Thumbnail.get('href')
+                if not Bookurl.startswith("/reviews/"):
+                    Bookurls.append(Thumbnail.get('href'))
 
-        print(Booknames)
+            print(Booknames)
 
         for j in range(MAX_NUM):
 
@@ -131,14 +135,14 @@ if __name__ == "__main__":
         ws.cell(row=3*(i+1)+1,column=1).border = border3
 
     # 一行目作成
-    for i in range(len(event.member_names)):
-        ws.cell(row=1,column=i+2,value=event.member_names[i]).alignment = Alignment(horizontal='center')
+    for i in range(len(member_names)):
+        ws.cell(row=1,column=i+2,value=member_names[i]).alignment = Alignment(horizontal='center')
         ws.cell(row=1,column=i+2).border = border3
 
     # 本情報書き込み
 
     max_height = [1 for i in range(MAX_NUM)]  # 最大行数の初期化
-    for i in range(len(event.member_names)):
+    for i in range(len(member_names)):
         # セル幅の設定
         ws.column_dimensions[num2alpha(i+2)].width = 45
         for j in range(MAX_NUM):
@@ -169,14 +173,14 @@ if __name__ == "__main__":
     if(os.path.exists('client_secrets.json') and GoogleDriveUp):
 
         # Google Driveへのアップロード
-        Drive = DriveUpload(event.title)
+        Drive = DriveUpload(excel_title)
         Drive.FileUpload(OUTPUT)
         D_id = Drive.GetId()
         print(D_id)
     
     # Zoomの開始時間はイベントの15分前
     d_15m = datetime.timedelta(minutes=15)
-    zoom_start = event.datetime - d_15m
+    zoom_start = schedule - d_15m
     d_120m = datetime.timedelta(minutes=120)
     zoom_end = zoom_start + d_120m
 
