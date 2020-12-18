@@ -190,13 +190,8 @@ if __name__ == "__main__":
 
     if ZoomMeetingSet:
         zoom = ZoomAPI()
-        zoom.GetAPIKey()
-        zoom.CreateToken()
-        zoom.SetConnection()
         zoom.GetUserInfo()
-        zoom.CreatePassword()
-        zoom.SettingMeeting("LR",start_time)
-        zoom.CreateMeeting()
+        zoom.CreateMeeting("LR",start_time)
 
     if GoogleCalendarUp:
         calendar = CalendarPost()
