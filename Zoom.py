@@ -81,9 +81,3 @@ class ZoomAPI:
         self.conn.request("POST", "/v2/users/"+self.user_id+"/meetings", headers=self.headers, body=setting_json)
         res = self.conn.getresponse()
         print(res.read())
-
-
-if __name__ == "__main__":
-    zoom = ZoomAPI()
-    zoom.GetUserInfo()
-    zoom.CreateMeeting("LR","2020-12-20T10:00:00")

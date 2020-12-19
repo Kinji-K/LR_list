@@ -58,7 +58,3 @@ class CalendarPost:
 
         event = self.service.events().insert(calendarId='primary',body=event).execute()
         print(event['id'])
-
-if __name__ == "__main__":
-    calendar = CalendarPost()
-    calendar.PostEvent("LR","ZOOM","LR meeting","2020-12-19T09:00:00","2020-12-19T12:00:00")

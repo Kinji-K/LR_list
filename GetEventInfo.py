@@ -61,15 +61,3 @@ class EventInfo:
         
         # 出力
         return dt
-
-if __name__ == "__main__":
-    event = EventInfo("7869","KJ")
-    ids = event.GetMemberId()
-    names = event.GetMemberName()
-    title = event.GetTitle()
-    datetime = event.GetSchedule()
-
-    print(ids)
-    print(names)
-    print(title)
-    print(datetime)
