@@ -6,6 +6,7 @@ from GetEventInfo import EventInfo
 from Zoom import ZoomAPI
 from Calendar import CalendarPost
 from List import MakeList
+from Todo import TodoPost
 
 OUTPUT = "output.xlsx"
 
@@ -21,6 +22,7 @@ if __name__ == "__main__":
         ZoomMeetingSet = json_load['ZoomMeetingSet']
         GoogleDriveUp = json_load['GoogleDriveUp']
         GoogleCalendarUp = json_load['GoogleCalendarUp']
+        GoogleTodoUp = json_load['GoogleTodoUp']
 
     event = EventInfo(Event_id,host)
     ids = event.GetMemberId()
@@ -61,3 +63,13 @@ if __name__ == "__main__":
     if GoogleCalendarUp:
         calendar = CalendarPost()
         calendar.PostEvent("LR","ZOOM","LR meeting",start_time,end_time)
+    
+    # メッセ通知のタスクは1週間前を期限とする
+    d_6d = datetime.timedelta(days=6)
+    todo_due = schedule - d_6d
+
+    due = str(todo_due.date()) + "T00:00:00Z"
+
+    if GoogleTodoUp:
+        todo = TodoPost()
+        todo.PostTodo("LR準備","メッセ配信",due)
