@@ -11,6 +11,7 @@ class ZoomAPI:
     # コントラクタ
     def __init__(self): 
         self.conn = None
+        self.res = None
         self.headers = {}
         self.user_id = ""
         self.timezone = ""
@@ -80,4 +81,4 @@ class ZoomAPI:
         # Meeting作成
         self.conn.request("POST", "/v2/users/"+self.user_id+"/meetings", headers=self.headers, body=setting_json)
         res = self.conn.getresponse()
-        print(res.read())
+        return res.read()
