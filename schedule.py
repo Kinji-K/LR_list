@@ -11,10 +11,13 @@ from GetEventInfo import EventInfo
 from List import MakeList
 from Drive import DriveUpload
 from Todo import TodoPost
+from Slack import SlackPost
 
 OUTPUT = "output.xlsx"
 
 def main():
+    # 通知用配列宣言
+    notices = []
 
     # ログイン情報をファイルから取得
     with open('MyId.json','r') as f:
@@ -40,6 +43,9 @@ def main():
     # データベースにないイベントの処理
     for my_event_info in my_event_infos:
         if my_event_info["id"] not in db_event_number:
+            # 通知用配列に追加
+            temp_dict = {"id":my_event_info["id"], "status":"new"}
+            notices.append(temp_dict)
 
             # イベントデータからの時間の作成
             schedule = datetime.datetime.strptime(my_event_info["datetime"],"%Y-%m-%dT%H:%M:%SZ") 
@@ -90,6 +96,9 @@ def main():
             
             # 開催一週間前かどうかの確認
             if today + datetime.timedelta(days=8) > schedule and today <= schedule:
+                # 通知用配列に追加
+                temp_dict = {"id":db_event_info[0], "status":"update"}
+                notices.append(temp_dict)
 
                 # イベント情報の収集
                 e_info = EventInfo(db_event_info[0],host)
@@ -98,8 +107,8 @@ def main():
                 excel_title = e_info.GetTitle()
             
                 # リストの作成
-                dooksheet = MakeList(member_names,member_ids,OUTPUT)
-                dooksheet.CreateSheet()
+                booksheet = MakeList(member_names,member_ids,OUTPUT)
+                booksheet.CreateSheet()
 
                 # Google Driveへのアップロード
                 Drive = DriveUpload(excel_title)
@@ -120,6 +129,20 @@ def main():
     
     # データベースの接続解除
     db.CloseDB()
+
+    message = ""
+
+    for notice in notices:
+        if notice["status"] == "new":
+            message = message + "イベント：" + notice["id"] + "が追加されました\n"
+        elif notice["status"] == "update":
+            message = message + "イベント：" + notice["id"] + "の準備が完了しました\n"
+
+    if message == "":
+        message = "イベントの更新はありませんでした"
+    
+    slack = SlackPost()
+    slack.WebhookSlack(message)
 
 if __name__ == "__main__": 
     main()
