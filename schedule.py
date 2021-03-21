@@ -2,6 +2,7 @@ import ast
 import sqlite3
 import json
 import datetime
+import re
 from login import DokumeLogin
 from GetMyEvent import GetMyEvent
 from DBHandle import DBHandle
@@ -12,12 +13,18 @@ from List import MakeList
 from Drive import DriveUpload
 from Todo import TodoPost
 from Slack import SlackPost
+from CreateSchedule import CreateScheduleFIle
 
 OUTPUT = "output.xlsx"
+OUTPUT_shcedule = "schedule.xlsx"
+DAY = ["月","火","水","木","金","土","日"]
 
 def main():
     # 通知用配列宣言
     notices = []
+
+    # 予定更新用配列宣言
+    schedule_info = []
 
     # ログイン情報をファイルから取得
     with open('MyId.json','r') as f:
@@ -93,6 +100,7 @@ def main():
         today = datetime.datetime.now()
 
         if db_event_info[7] == 0:
+            schedule_info.append([re.split('[TZ]',db_event_info[2])[0], DAY[schedule.weekday()],"◯", re.split('[TZ]',db_event_info[2])[1], "https://bookmeter.com/events/"+db_event_info[0]])
             
             # 開催一週間前かどうかの確認
             if today + datetime.timedelta(days=8) > schedule and today <= schedule:
@@ -123,12 +131,21 @@ def main():
                 db.DoneEvent(db_event_info[0])
         
         if db_event_info[7] == 1:
+            schedule_info.append([re.split('[TZ]',db_event_info[2])[0], DAY[schedule.weekday()],"◯", re.split('[TZ]',db_event_info[2])[1], "https://bookmeter.com/events/"+db_event_info[0]])
             # 既に開催日を超えていたらdoneに2を入れる。
             if today > schedule:
                 db.DoneEvent(db_event_info[0])
     
     # データベースの接続解除
     db.CloseDB()
+
+    print(schedule_info)
+
+    schedule_sheet = CreateScheduleFIle(schedule_info, OUTPUT_shcedule)
+    schedule_sheet.MakeFormat()
+    schedule_sheet.FillInfo()
+    schedule_drive = DriveUpload("")
+    schedule_drive.ScheduleUpdate(OUTPUT_shcedule)
 
     message = ""
 

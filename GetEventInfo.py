@@ -44,8 +44,7 @@ class EventInfo:
         line = self.soup.select_one(".header__title").string
 
         # エクセルタイトルに合うように操作
-        line = line.split("レバレッジ")[0]
-        title = "【" + line + "】レバレッジリーディング読書会リスト.xlsx"
+        title = line + ".xlsx"
 
         # 出力
         return title
