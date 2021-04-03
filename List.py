@@ -32,12 +32,15 @@ class MakeList:
             res = requests.get(url)
             soup = BeautifulSoup(res.text, 'html.parser')
 
+            print(self.att_id[i])
             # 読んだ冊数
-            num = soup.select('div.content__count')
+            num = soup.select('.list__data')
             if num:
                 n = int(num[0].string)
             else:
                 n = 0
+
+            print(n)
 
             # 読んだ冊数が制限値を超えていたらエラーを出してプログラムを停止
             if n > self.MAX_NUM:
