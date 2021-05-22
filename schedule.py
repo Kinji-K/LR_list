@@ -93,6 +93,9 @@ def main():
             # データベースへの登録
             db.PostEventId(my_event_info)
     
+    # データベースの再読込
+    db_event_infos = db.GetEventInfo()
+
     # doneの数字が0と1のものの処理
     # 0のものは一週間以内かどうか？、1のものは終了しているかどうか？
     for db_event_info in db_event_infos:
@@ -100,9 +103,11 @@ def main():
         today = datetime.datetime.now()
 
         if db_event_info[7] == 0:
-            schedule_info.append([re.split('[TZ]',db_event_info[2])[0], DAY[schedule.weekday()],"◯", re.split('[TZ]',db_event_info[2])[1], "https://bookmeter.com/events/"+db_event_info[0]])
+            # 開催日が一週間後以降のケース
+            if today + datetime.timedelta(days=8) <= schedule:
+                schedule_info.append([re.split('[TZ]',db_event_info[2])[0], DAY[schedule.weekday()],"◯", re.split('[TZ]',db_event_info[2])[1], "https://bookmeter.com/events/"+db_event_info[0]])
             
-            # 開催一週間前かどうかの確認
+            # 開催一週間前〜当日のケース
             if today + datetime.timedelta(days=8) > schedule and today <= schedule:
                 # 通知用配列に追加
                 temp_dict = {"id":db_event_info[0], "status":"update"}
@@ -125,16 +130,19 @@ def main():
 
                 update_info = {"id": db_event_info[0],"title": excel_title,"drive_id": D_id}
                 db.UpdateEvent(update_info)
+
+                schedule_info.append([re.split('[TZ]',db_event_info[2])[0], DAY[schedule.weekday()],"◯", re.split('[TZ]',db_event_info[2])[1], "https://bookmeter.com/events/"+db_event_info[0]])
             
             # 既に開催日を超えていたらdoneに2を入れる。
             if today > schedule:
                 db.DoneEvent(db_event_info[0])
         
         if db_event_info[7] == 1:
-            schedule_info.append([re.split('[TZ]',db_event_info[2])[0], DAY[schedule.weekday()],"◯", re.split('[TZ]',db_event_info[2])[1], "https://bookmeter.com/events/"+db_event_info[0]])
             # 既に開催日を超えていたらdoneに2を入れる。
             if today > schedule:
                 db.DoneEvent(db_event_info[0])
+            else:
+                schedule_info.append([re.split('[TZ]',db_event_info[2])[0], DAY[schedule.weekday()],"◯", re.split('[TZ]',db_event_info[2])[1], "https://bookmeter.com/events/"+db_event_info[0]])
     
     # データベースの接続解除
     db.CloseDB()
