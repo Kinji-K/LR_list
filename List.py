@@ -11,7 +11,7 @@ from BookInfo import BookInfo
 class MakeList:
 
     # コンストラクタ
-    def __init__(self,att_name,att_id,TITLE,max_num=50):
+    def __init__(self,att_name,att_id,TITLE,max_num=70):
         self.MAX_NUM = max_num # 読んだ冊数の最大値（デフォルト=50）
         self.att_name = att_name # 参加者名用配列
         self.att_id = att_id # 参加者id用配列
